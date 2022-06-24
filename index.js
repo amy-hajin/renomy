@@ -56,6 +56,15 @@ app.post("/update", (req, res) => {
   });
 });
 
+app.post("/delete", (req, res) => {
+  const id = req.body.boardIdList; // 6,5
+
+  const sqlQuery = `DELETE FROM BOARD WHERE BOARD_ID IN (${id})`;
+  db.query(sqlQuery, (err, result) => {
+    res.send(result);
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`running on port${PORT}`);
 });

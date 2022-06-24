@@ -1,23 +1,26 @@
-import { Component } from "react";
+import React, { Component } from "react";
+import Axios from "axios";
 import Table from "react-bootstrap/Table";
 import Button from "react-bootstrap/Button";
-import Axios from "axios";
+import { Link } from "react-router-dom";
 
 const Board = ({
   id,
   title,
   registerId,
   registerDate,
+  onCheckboxChange,
 }: {
   id: number;
   title: string;
   registerId: string;
   registerDate: string;
+  onCheckboxChange: any;
 }) => {
   return (
     <tr>
       <td>
-        <input type="checkbox"></input>
+        <input type="checkbox" value={id} onChange={onCheckboxChange}></input>
       </td>
       <td>{id}</td>
       <td>{title}</td>
@@ -27,12 +30,55 @@ const Board = ({
   );
 };
 
+interface IProps {
+  isComplete: boolean;
+  handleModify: any;
+  renderComplete: any;
+}
+
 /**
  * BoardList class
+ * @param {SS} e
  */
-class BoardList extends Component {
+class BoardList extends Component<IProps> {
+  handleDelete = () => {
+    if (this.state.checkList.length === 0) {
+      alert("삭제");
+      return;
+    }
+
+    let boardIdList = "";
+
+    this.state.checkList.forEach((v: any) => {
+      boardIdList += `'${v}',`;
+    });
+
+    Axios.post("http://localhost:8000/delete", {
+      boardIdList: boardIdList.substring(0, -1),
+    })
+      .then(() => {
+        this.getList();
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+  };
+  /**
+   * @param {SS} props
+   */
+  constructor(props: any) {
+    super(props);
+    this.state = {
+      isModifyMode: props.isModifyMode,
+      BoardList: [],
+      checkList: [],
+    };
+  }
+
   state = {
     BoardList: [],
+    checkList: [],
+    isModifyMode: false,
   };
 
   getList = () => {
@@ -42,11 +88,36 @@ class BoardList extends Component {
         this.setState({
           BoardList: data,
         });
+        this.props.renderComplete();
       })
       .catch((e) => {
         console.error(e);
       });
   };
+
+  /**
+   *
+   * @param {boolean} checked
+   * @param {any} id
+   */
+  onCheckboxChange = (checked: boolean, id: any) => {
+    const list: Array<string> = this.state.checkList.filter((v) => {
+      return v !== id;
+    });
+
+    if (checked) {
+      list.push(id);
+    }
+
+    this.setState({
+      checkList: list,
+    });
+  };
+  // onCheckboxChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  //   console.log(event.target, event.target.checked, event.target.value);
+  //   console.log("checkbox changed");
+
+  // };
 
   /**
    */
@@ -55,7 +126,13 @@ class BoardList extends Component {
   }
 
   /**
-   *
+   */
+  componentDidUpdate() {
+    if (!this.props.isComplete) {
+      this.getList();
+    }
+  }
+  /**
    * @returns {Component} Component
    */
   render() {
@@ -85,15 +162,27 @@ class BoardList extends Component {
                     registerId={v.REGISTER_ID}
                     registerDate={v.REGISTER_DATE}
                     key={v.BOARD_ID}
+                    onCheckboxChange={this.onCheckboxChange}
                   />
                 );
               })
             }
           </tbody>
         </Table>
-        <Button variant="info">생성</Button>
-        <Button variant="secondary">수정</Button>
-        <Button variant="danger">삭제</Button>
+        <Link to="/write">
+          <Button variant="info">생성</Button>
+        </Link>
+        <Button
+          variant="secondary"
+          onClick={() => {
+            this.props.handleModify(this.state.checkList);
+          }}
+        >
+          수정
+        </Button>
+        <Button variant="danger" onClick={this.handleDelete}>
+          삭제
+        </Button>
       </div>
     );
   }
